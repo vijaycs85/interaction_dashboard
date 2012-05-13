@@ -14,7 +14,7 @@ function interaction_dashboard_get_od_pair() {
   if (!empty($od)) {
     $count = count($od->ListODOutput->ODReferenceDataOutputs->ODReferenceDataOutput);
     return array(
-        'status' => 1,
+        'status' => INTERACTION_DASHBOARD_SUCCESS,
         'message' => t('Loaded %number OD pairs successfully!!!', array('%number' => $count)),
     );
   }
@@ -30,7 +30,7 @@ function interaction_dashboard_get_booking_horizon() {
   if (!empty($booking_horizon)) {
     $count = count($booking_horizon->ListBookingHorizonOutput->BookingHorizons->BookingHorizon);
     return array(
-      'status' => 1,
+      'status' => INTERACTION_DASHBOARD_SUCCESS,
       'message' => t('Loaded %number booking horizon data successfully!!!', array('%number' => $count)),
     );
   }
@@ -47,7 +47,7 @@ function interaction_dashboard_get_list_credit_card_fees() {
     $fees_details = $fees->getFees();
     $cards = implode(', ', array_keys($fees_details['charges']));
     return array(
-      'status' => 1,
+      'status' => INTERACTION_DASHBOARD_SUCCESS,
       'message' => t('Retrieved surcharges for  %cards card(s) successfully!!!', array('%cards' => $cards)),
     );
   }
@@ -77,7 +77,7 @@ function interaction_dashboard_get_booking_quotation() {
   $outward_proposals = $train_search->getProposalsForDay(Journey::$TYPE_OUTWARD);
   if (!empty($outward_proposals)) {
     return array(
-      'status' => 1,
+      'status' => INTERACTION_DASHBOARD_SUCCESS,
       'message' => t('Retrieved %journey_type proposals successfully!!!', array('%journey_type' => Journey::$TYPE_OUTWARD)),
     );
   }
@@ -450,7 +450,7 @@ function interaction_dashboard_get_booking_quotation_by_period() {
   $proposals = $train_search->getProposalsForPeriod(Journey::$TYPE_OUTWARD, $start_date);
   if (!empty($proposals)) {
     return array(
-      'status' => 1,
+      'status' => INTERACTION_DASHBOARD_SUCCESS,
       'message' => t('Retrieved %journey_type period proposals successfully!!!', array('%journey_type' => Journey::$TYPE_OUTWARD)),
     );
   }
@@ -590,7 +590,7 @@ function interaction_dashboard_find_address() {
   $address = $paf_service->getAddress();
   if (isset($address)) {
     return array(
-        'status' => 1,
+        'status' => INTERACTION_DASHBOARD_SUCCESS,
         'message' => t('Address service working successfully!!!')
     );
   }
@@ -614,7 +614,7 @@ function interaction_dashboard_get_hotel_availability() {
       '%city' => $hotel_search->getScope(),
     );
     return array(
-      'status' => 1,
+      'status' => INTERACTION_DASHBOARD_SUCCESS,
       'message' => t('found %number hotel(s) to stay from %start_date to %end_date in %city', $hotel_details),
     );
   }
@@ -672,7 +672,7 @@ function interaction_dashboard_create_lite_customer() {
   $email = uniqid().'.servic_test@localhost.com';
   if ($iloyal_customer_id = UserEntityWrapper::createLiteAccount($email)) {
     return array(
-      'status' => 1,
+      'status' => INTERACTION_DASHBOARD_SUCCESS,
       'message' => t('lite user created(customer id:@customer_id) with email id: @mail', array('@customer_id' => $iloyal_customer_id,'@mail' => $email)),
     );
   }
@@ -692,8 +692,35 @@ function interaction_dashboard_retrieve_customer() {
     $response_email  =(string) current($user_serivce->getResponse()->xpath('//memberContactInfos/emailAddress'));
     if ($response_email == $email) {
       return array(
-        'status' => 1,
+        'status' => INTERACTION_DASHBOARD_SUCCESS,
         'message' => t('Retrived user details from iLoyal for customer-id:@customer_id', array('@customer_id' => $iloyal_customer_id)),
+      );
+    }
+  }
+  return interaction_dashboard_get_default();
+}
+
+/**
+ *
+ */
+function interaction_dashboard_manage_customer() {
+  $email = uniqid().'.servic_test@localhost.com';
+  if ($iloyal_customer_id = UserEntityWrapper::createLiteAccount($email)) {
+    $account = user_load_by_mail($email);
+    $wrapper = extended_entity_wrapper('user', $account, array(), 'UserEntityWrapper');
+    $wrapper->field_user_iloyal_customer_no->set($iloyal_customer_id);
+    $wrapper->field_user_comm_pref->set($form_state['values']['main_preference'] ? 'Y' : 'N');
+    $wrapper->field_user_comm_promotion_offers->set($form_state['values']['promotion_offers'] ? 'Y' : 'N');
+    $wrapper->field_user_comm_product_updates->set($form_state['values']['product_updates'] ? 'Y' : 'N');
+    $wrapper->field_user_comm_information->set($form_state['values']['information'] ? 'Y' : 'N');
+    $wrapper->field_user_comm_whats_happening->set($form_state['values']['whats_happening'] ? 'Y' : 'N');
+    $wrapper->field_user_comm_country->set($form_state['values']['country_residence']);
+    if ($wrapper->updateILoyal('preferences')) {
+      $account = user_save($account);
+      $replace = array('!uid' => $wrapper->value()->uid, '!iloyal' => $wrapper->field_user_iloyal_customer_no->value());
+      return array(
+        'message' => t('Updated iLoyal preferences from Drupal user for uid !uid, iLoyal customer number !iloyal', $replace),
+        'status' => INTERACTION_DASHBOARD_SUCCESS,
       );
     }
   }

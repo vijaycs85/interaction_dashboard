@@ -8,9 +8,11 @@
  * 
  */
 function interaction_dashboard_status($service) {
+  module_load_include('inc', 'interaction_dashboard', 'interaction_dashboard.interaction_dashboard_defaults');
   $fn = 'interaction_dashboard_'.str_replace('-', '_', $service);
   $default = array('status' => 2, 'message' => 'Your service not configured proper in service manager!!!');
   $result = array('status' => 2, 'message' => 'Your service not added to service manager yet...');
+
   if (function_exists($fn)) {
     try {
       $result = $fn();
@@ -58,7 +60,7 @@ function interaction_dashboard_admin_form($form, $form_state) {
     );
     $href = '';
     $state = theme('interaction_dashboard_storage_link', array('storage' => INTERACTION_DASHBOARD_CHECKING, 'path' => $href));
-    $state .= l(t('Check'), "admin/structure/test-service/{$name}/status", array('attributes' => array('class' => array('admin-check'))));
+    $state .= l(t('Check'), "admin/structure/interaction-dashboard/{$name}/status", array('attributes' => array('class' => array('admin-check'))));
     $state .= theme('interaction_dashboard_storage_link', array('storage' => INTERACTION_DASHBOARD_RUNNING, 'path' => $href));
     $state .= theme('interaction_dashboard_storage_link', array('storage' => INTERACTION_DASHBOARD_FAILING, 'path' =>  $href));
     $state .= theme('interaction_dashboard_storage_link', array('storage' => INTERACTION_DASHBOARD_RELOAD, 'path' => '#'));

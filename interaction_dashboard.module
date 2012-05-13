@@ -260,7 +260,7 @@ function interaction_dashboard_modules_enabled($modules) {/*
  */
 function interaction_dashboard_get_default() {
   return array(
-    'status' => 2,
+    'status' => INTERACTION_DASHBOARD_FAIL,
     'message' => t('Caution: Your service is failing without any exception!'),
   );
 }
