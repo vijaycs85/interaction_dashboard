@@ -1,0 +1,266 @@
+<?php
+/*
+ * @file
+ * 
+ * 
+ */
+
+
+define('INTERACTION_DASHBOARD_RUNNING', 1);
+define('INTERACTION_DASHBOARD_FAILING', 2);
+define('INTERACTION_DASHBOARD_RELOAD', 3);
+define('INTERACTION_DASHBOARD_CHECKING', 6);
+define('INTERACTION_DASHBOARD_SUCCESS', 1);
+define('INTERACTION_DASHBOARD_FAIL', 2);
+/**
+ * Implements hook_permission().
+ */
+function interaction_dashboard_permission() {
+  return array(
+    'administer interaction dashboard' => array(
+      'title' => t('Administer interaction dashboard'),
+      'description' => t('Perform administration tasks on interaction dashboard.'),
+    ),
+  );
+}
+
+/*
+ * Implements hook_menu
+ */
+ 
+function interaction_dashboard_menu() {
+  $items = array();
+  $items['interaction-dashboard/get-hotel-availability'] = array(
+    'title' => 'Address services',
+    'page callback' => 'interaction_dashboard_get_hotel_availability',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/create-lite-customer'] = array(
+    'title' => 'Address services',
+    'page callback' => 'interaction_dashboard_create_lite_customer',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/generate-pah'] = array(
+    'title' => 'Address services',
+    'page callback' => 'interaction_dashboard_generate_pah',
+    'access arguments' => array('administer interaction dashboard'),
+  ); 
+  $items['interaction-dashboard/find-address'] = array(
+    'title' => 'Address services',
+    'page callback' => 'interaction_dashboard_find_address',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/finalize-refund'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_finalize_refund',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/refund-proposal'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_refund_proposal',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  
+  $items['interaction-dashboard/load-travel'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_load_travel',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/retrieve-customer'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_retrieve_customer',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/checkout'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_checkout',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/get-passenger'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('interaction_dashboard_get_passenger'),
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/get-list-od'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_get_od_pair',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/get-booking-horizon'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_get_booking_horizon',
+    'access arguments' => array('administer interaction dashboard'),
+  ); 
+  $items['interaction-dashboard/get-list-credit-card-fees'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_get_list_credit_card_fees',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/get-booking-quotation'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_get_booking_quotation',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  
+  $items['interaction-dashboard/cancel-reservation'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_cancel_reservation',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/make-reservation'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_make_reservation',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+
+  $items['interaction-dashboard/exchange-outbound'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_exchange_outbound',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/exchange-inbound'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_exchange_inbound',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/valiate-proposal'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_validate_proposal',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/authorize-card'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_authorize_card',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/authorize-card-cc-token'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_authorize_card_cc_token',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/modify-passenger-data'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_modify_passenger_data',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/finalize-exchange'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_finalize_exchange',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/get-booking-quotation-by-period'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_get_booking_quotation_by_period',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/manage-user'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_manage_user',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  $items['interaction-dashboard/get-hotel-rule-rates'] = array(
+    'title' => 'Testing services',
+    'page callback' => 'interaction_dashboard_get_hotel_rate_rules',
+    'access arguments' => array('administer interaction dashboard'),
+  );
+  
+  $items['admin/structure/interaction-dashboard/%/status'] = array(
+    'title' => 'Status',
+    'description' => 'Javascript status call back.',
+    'page callback' => 'interaction_dashboard_status',
+    'page arguments' => array(3),
+    'load arguments' => array(3, TRUE),
+    // 'access callback' => 'user_access',
+    // 'access arguments' => array('administer services'),
+    'access arguments' => array('administer interaction dashboard'),
+    'type' => MENU_CALLBACK,
+    'file' => 'interaction_dashboard.admin.inc',
+  );
+  $items['admin/structure/interaction-dashboard'] = array(
+    'title' => 'Services status check',
+    'description' => 'Manage services.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('interaction_dashboard_admin_form'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'interaction_dashboard.admin.inc',
+  );
+    $items['admin/structure/interaction-dashboard/manage'] = array(
+    'title' => 'Manage',
+    'description' => 'Monitor services.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('interaction_dashboard_admin_form'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'file' => 'interaction_dashboard.admin.inc',
+  );
+  foreach ($items as $path => $item) {
+    if (!isset($item['access callback'])) {
+      $items[$path]['access callback'] = 'user_access';
+      // $items[$path]['access arguments'] = array('manage services');
+      $items[$path]['access arguments'] = array('administer interaction dashboard');
+    }
+    if (!isset($item['file'])) {
+      $items[$path]['file'] = 'interaction_dashboard.interaction_dashboard_defaults.inc';
+    }
+  }
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function interaction_dashboard_theme() {
+  $items = array();
+  $base = array(
+    'path' => drupal_get_path('module', 'interaction_dashboard'),
+    'file' => 'interaction_dashboard.theme.inc',
+  );
+  $items['interaction_dashboard_form_package'] = array(
+    'render element' => 'form',
+  ) + $base;
+  $items['interaction_dashboard_storage_link'] = array(
+    'variables' => array('storage' => null, 'text' => null, 'path' => null, 'options' => array()),
+  ) + $base;
+  
+  return $items;
+}
+/**
+ * Load includes for any modules that implement.
+ *
+ */
+function interaction_dashboard_include($reset = FALSE) {
+  /*
+  static $once;
+  if (!isset($once) || $reset) {
+    $once = TRUE;
+    $modules = module_implements('interaction_dashboard');
+    foreach (array_filter($modules, 'module_exists') as $module) {
+      module_load_include('inc', 'features', "includes/features.$module");
+    }
+  }*/
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function interaction_dashboard_modules_enabled($modules) {/*
+  // Find any features modules that were enabled.
+  if ($modules = array_intersect(array_keys(features_get_features()), $modules)) {
+    foreach ($modules as $module) {
+      features_enable_feature($module);
+    }
+  }
+  // Make sure any new files are included now that a new module is enabled.
+  interaction_dashboard_include(TRUE);*/
+}
+
+/**
+ * Enter description here ...
+ * @return multitype:number NULL 
+ */
+function interaction_dashboard_get_default() {
+  return array(
+    'status' => 2,
+    'message' => t('Caution: Your service is failing without any exception!'),
+  );
+}

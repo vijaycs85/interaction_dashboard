@@ -1,0 +1,5 @@
+name = Interaction dashboard
+description = Provides dashboard to interaction services to monitor.
+core = 7.x
+packages = Eurostar dev
+files[] = interaction_dashboard.interaction_dashboard_defaults.inc
