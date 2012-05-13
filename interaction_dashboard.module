@@ -258,9 +258,9 @@ function interaction_dashboard_modules_enabled($modules) {/*
  * Enter description here ...
  * @return multitype:number NULL 
  */
-function interaction_dashboard_get_default() {
+function interaction_dashboard_get_default($message = 'Service is failing without exception', $status = INTERACTION_DASHBOARD_FAIL) {
   return array(
     'status' => INTERACTION_DASHBOARD_FAIL,
-    'message' => t('Caution: Your service is failing without any exception!'),
+    'message' => t('Service is failing without exception'),
   );
 }

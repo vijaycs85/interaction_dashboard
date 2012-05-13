@@ -59,21 +59,7 @@ function interaction_dashboard_get_list_credit_card_fees() {
  * @return multitype:number NULL 
  */
 function interaction_dashboard_get_booking_quotation() {
-  $origin_destination = entity_load('origin_destination', FALSE, array('origin_code' => 'GBLON', 'destination_code' => 'FRPAR'));
-  if (empty($origin_destination)) {
-    watchdog('interaction_dashboard', t('Error while testing %origin to %destination', array('%origin' => 'GBLON', '%destination' => 'FRPAR',)));
-  }
-  $origin_destination = array_pop($origin_destination);
-  $search_criteria = array(
-    'origin_destination' => $origin_destination,
-    'depart' => strtotime('+2 days 6 am'),
-    'adult' => '2',
-    'senior' => '1',
-    'youth' => '0',
-    'child' => '0',
-    'return' => strtotime('+5 days 11 am'),
-  );
-  $train_search = new TrainSearch($search_criteria['origin_destination'], $search_criteria['depart'], $search_criteria['adult'], $search_criteria['senior'], $search_criteria['youth'], $search_criteria['child'], $search_criteria['return']);
+  $train_search = _interaction_dashboard_get_train_search();
   $outward_proposals = $train_search->getProposalsForDay(Journey::$TYPE_OUTWARD);
   if (!empty($outward_proposals)) {
     return array(
@@ -88,28 +74,35 @@ function interaction_dashboard_get_booking_quotation() {
  * Enter description here ...
  */
 function interaction_dashboard_cancel_reservation(){
-  $service =  messagequeue_service_load('cancel_reservation');
-  $result = $service->invoke(array('pnrReference' => 'ABCDEF'));
-  //print_r($result);exit;
+    $make_reservation = _interaction_dashboad_get_reservation();
   // Check status and set return value.
-  if ($result['status']) {
-    $return = $result['data'];
+  if ($pnr = $make_reservation->getPNR()) {
+    $cancel_reservation = messagequeue_service_load('cancel_reservation');
+    $cancel_reservation->pnr_reference = $pnr;
+    $cancel_reservation->invoke();
+    if ($status = $cancel_reservation->getStatus()) {
+      return array(
+        'status' => INTERACTION_DASHBOARD_SUCCESS,
+        'message' => t('cancellation service working. Cancellation status of PNR @pnr is @status', array('@pnr' => $pnr, '@status' => $status)),
+      );
+    }
   }
-  //return train_tickets_get_credit_card_fee();
+  return interaction_dashboard_get_default();
 }
 
 /**
  * Enter description here ...
  */
 function interaction_dashboard_make_reservation(){
-  $service =  messagequeue_service_load('make_reservation');
-  //TODO: build $context->storage
-  $result = $service->invoke($data);
+  $make_reservation = _interaction_dashboad_get_reservation();
   // Check status and set return value.
-  if ($result['status']) {
-    $return = $result['data'];
+  if ($pnr = $make_reservation->getPNR()) {
+    return array(
+        'status' => INTERACTION_DASHBOARD_SUCCESS,
+        'message' => t('Reservation service working successfully. PNR is @pnr', array('@pnr' => $pnr)),
+    );
   }
-  //return train_tickets_get_credit_card_fee();
+  return interaction_dashboard_get_default();
 }
 
 /**
@@ -335,22 +328,37 @@ function interaction_dashboard_authorize_card_cc_token() {
  * Enter description here ...
  */
 function interaction_dashboard_modify_passenger_data() {
-  $params['train_search']['tickets']['make_reservation']['pnr_reference'] = 'AAAAAA';
-  $params['train_search']['tickets']['traveller_details'] = array(
-    'ADULT' => array(
-  array('first_name' => 'F1', 'last_name' => 'L1', 'passenger_id' => '1', 'membership' => '1001', 'wheelchair' => FALSE, 'title' => 'Mr'),
-  array('first_name' => 'F2', 'last_name' => 'L2', 'passenger_id' => '2', 'membership' => '1002', 'wheelchair' => TRUE, 'title' => 'Mr'),
-  ),
-    'CHILD' => array(
-  array('first_name' => 'F3', 'last_name' => 'L3', 'passenger_id' => '3', 'membership' => '1003', 'wheelchair' => FALSE, 'title' => 'Mr'),
-  array('first_name' => 'F4', 'last_name' => 'L4', 'passenger_id' => '4', 'membership' => '1004', 'wheelchair' => TRUE, 'title' => 'Mr'),
-  ),
-  );
+  list($make_reservation, $train_search) = _interaction_dashboad_get_reservation(TRUE);
+  if ($pnr = $make_reservation->getPNR()) {
 
-  $service =  messagequeue_service_load('modify_passenger_data');
-  // $service->stub = TRUE;
-  $result = $service->invoke($params);
-  //print_r($result);exit;
+    // @TODO: Invoke SBE to update traveller details.
+    $modify_passenger_data = messagequeue_service_load('modify_passenger_data');
+    $modify_passenger_data->setPnr($pnr);
+
+    // Save traveller details in multistep cache so other panes can use it.
+    $selected_proposal = $train_search->getSelectedProposal(Journey::$TYPE_OUTWARD);
+    $passengers = $selected_proposal->getPassengers();
+    $segments = $selected_proposal->getSegments();
+    foreach($segments as $segment) {
+      foreach ($passengers as $passenger) {
+        // Update passenger information
+        $passenger->title = UserEntityWrapper::getTitleName('Mr');
+        $passenger->first_name = 'firstname' . $passenger->id;
+        $passenger->last_name = 'lastname' . $passenger->id;
+        $passenger->eft_number = 308381;
+        //$passenger->meal_code = '';
+        $modify_passenger_data->addPassenger($passenger->id, $passenger);
+      }
+    }
+    $modify_passenger_data->invoke();
+    if ($modify_passenger_data->getStatus()) {
+      return interaction_dashboard_get_default(t('Passenger details modified and status is @status', array('@status' => $modify_passenger_data->getStatus())));
+    }
+  }
+  else {
+      return interaction_dashboard_get_default(t('Make reservation service is falling'));
+  }
+  return interaction_dashboard_get_default();
 }
 
 /**
@@ -511,18 +519,23 @@ function interaction_dashboard_checkout() {
  * Enter description here ...
  */
 function interaction_dashboard_load_travel() {
-  $service = LoadTravel::create();
-  $service->setPnr('ABCDEF');/*
-
-  // setPassengerInformation($lastname, $email = NULL, $eft_number = NULL, $creditcard_token = NULL)
-  $service->setPassengerInformation('LASTNAME', 'me@mail.com', 'eft121212112', 'creditcard121212121');
-  $service->setTravelDate(time()+2*24*60);
-  $service->history = TRUE;
-  $service->eligibility_mod = TRUE;
-  $service->invoke();*/
-  $service->setPassengerInformation('LASTNAME', 'me@mail.com', 'eft121212112', 'creditcard121212121');
-  $passenger = $service->getPassengerInformation();
-  return;
+    $make_reservation = _interaction_dashboad_get_reservation();
+  // Check status and set return value.
+  if ($pnr = $make_reservation->getPNR()) {
+    $travel = LoadTravel::create();
+    $travel->setPnr($pnr);
+    $travel->invoke();
+    if ($travel->getOrigin()) {
+      return array(
+        'status' => INTERACTION_DASHBOARD_SUCCESS,
+        'message' => t('Retrieved travel details for given PNR @pnr successfully', array('@pnr' => $pnr)),
+      );
+    }
+  }
+  else {
+    interaction_dashboard_get_default(t(('Make reservation is falling')));
+  }
+  return interaction_dashboard_get_default();
 }
 
 /**
@@ -725,4 +738,47 @@ function interaction_dashboard_manage_customer() {
     }
   }
   return interaction_dashboard_get_default();
+}
+
+function _interaction_dashboard_get_train_search() {
+  $origin_destination = entity_load('origin_destination', FALSE, array('origin_code' => 'GBLON', 'destination_code' => 'FRPAR'));
+  if (empty($origin_destination)) {
+    watchdog('interaction_dashboard', t('Error while testing %origin to %destination', array('%origin' => 'GBLON', '%destination' => 'FRPAR',)));
+  }
+  $origin_destination = array_pop($origin_destination);
+  $search_criteria = array(
+    'origin_destination' => $origin_destination,
+    'depart' => strtotime('+2 days 6 am'),
+    'adult' => '2',
+    'senior' => '1',
+    'youth' => '0',
+    'child' => '0',
+    'return' => strtotime('+5 days 11 am'),
+  );
+  $train_search = new TrainSearch($search_criteria['origin_destination'], $search_criteria['depart'], $search_criteria['adult'], $search_criteria['senior'], $search_criteria['youth'], $search_criteria['child'], $search_criteria['return']);
+  return $train_search;
+}
+
+function _interaction_dashboad_get_reservation($get_search = FALSE) {
+  $train_search = _interaction_dashboard_get_train_search();
+  _interaction_dashboard_set_proposal($train_search);
+
+  $make_reservation = messagequeue_service_load('make_reservation');
+  $make_reservation->addSelectedProposal($train_search->getSelectedProposal(Journey::$TYPE_OUTWARD));
+  $make_reservation->invoke();
+  if ($get_search) {
+    return array ($make_reservation, $train_search);
+  }
+  return $make_reservation;
+}
+function _interaction_dashboard_set_proposal(&$train_search) {
+  $proposals = $train_search->getProposalsForDay(Journey::$TYPE_OUTWARD);
+  foreach ($proposals as $journey_id => $journey) {
+    foreach ($journey as $proposal) {
+      $ticket_class = $proposal->getTicketClass();
+      $ticket_flexibility = $proposal->getTicketFlexibility();
+    }
+  }
+  $train_search->selectProposal($journey_id, $ticket_class, $ticket_flexibility);
+  return $train_search;
 }
